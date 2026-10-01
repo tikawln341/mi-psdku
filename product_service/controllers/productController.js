@@ -1,5 +1,35 @@
 const productModel = require('../models/productModel');
 
+// Validasi image Base64
+function validateImage(image) {
+    // 1. Image wajib diisi
+    if (!image) {
+        return 'Field image wajib diisi';
+    }
+
+    // 2. Cek format Base64
+    const base64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
+
+    if (
+        typeof image !== 'string' ||
+        image.length === 0 ||
+        image.length % 4 !== 0 ||
+        !base64Regex.test(image)
+    ) {
+        return 'Field image harus berupa Base64 yang valid';
+    }
+
+    // 3. Decode Base64 dan cek ukuran image asli
+    const imageBuffer = Buffer.from(image, 'base64');
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+
+    if (imageBuffer.length > maxSize) {
+        return 'Ukuran image maksimal 2 MB';
+    }
+
+    return null;
+}
+
 // GET ambil semua products
 async function index(req, res) {
     try {
@@ -9,9 +39,9 @@ async function index(req, res) {
             data: products
         });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Gagal mengambil data produk',
-            error: error.message 
+            error: error.message
         });
     }
 }
@@ -20,13 +50,21 @@ async function index(req, res) {
 async function show(req, res) {
     try {
         const id = Number(req.params.id);
+
         if (!Number.isInteger(id) || id <= 0) {
-            return res.status(400).json({ message: 'ID produk tidak valid' });
+            return res.status(400).json({
+                message: 'ID produk tidak valid'
+            });
         }
+
         const product = await productModel.getProductById(id);
+
         if (!product) {
-            return res.status(404).json({ message: 'Produk tidak ditemukan' });
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            });
         }
+
         res.status(200).json({
             message: 'Berhasil mengambil detail produk',
             data: product
@@ -42,19 +80,45 @@ async function show(req, res) {
 // POST Create Product
 async function createProduct(req, res) {
     try {
-        const { name, description, price, stock } = req.body;
+        const {
+            name,
+            description,
+            price,
+            stock,
+            image
+        } = req.body;
+
         if (!name || price === undefined || stock === undefined) {
-            return res.status(400).json({ message: 'Field name, price, dan stock wajib diisi' });
+            return res.status(400).json({
+                message: 'Field name, price, dan stock wajib diisi'
+            });
         }
-        const product = await productModel.createProduct({ name, description: description || null, price, stock });
+
+        // Validasi image
+        const imageError = validateImage(image);
+
+        if (imageError) {
+            return res.status(400).json({
+                message: imageError
+            });
+        }
+
+        const product = await productModel.createProduct({
+            name,
+            description: description || null,
+            price,
+            stock,
+            image
+        });
+
         res.status(201).json({
             message: 'Berhasil menambah data produk',
             data: product
         });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Gagal menambah data produk',
-            error: error.message 
+            error: error.message
         });
     }
 }
@@ -63,18 +127,52 @@ async function createProduct(req, res) {
 async function updateProduct(req, res) {
     try {
         const id = Number(req.params.id);
+
         if (!Number.isInteger(id) || id <= 0) {
-            return res.status(400).json({ message: 'ID produk tidak valid' });
+            return res.status(400).json({
+                message: 'ID produk tidak valid'
+            });
         }
-        const { name, description, price, stock } = req.body;
+
+        const {
+            name,
+            description,
+            price,
+            stock,
+            image
+        } = req.body;
+
         if (!name || price === undefined || stock === undefined) {
-            return res.status(400).json({ message: 'Field name, price, dan stock wajib diisi' });
+            return res.status(400).json({
+                message: 'Field name, price, dan stock wajib diisi'
+            });
         }
+
         const existing = await productModel.getProductById(id);
+
         if (!existing) {
-            return res.status(404).json({ message: 'Produk tidak ditemukan' });
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            });
         }
-        const product = await productModel.updateProduct(id, { name, description: description || null, price, stock });
+
+        // Validasi image
+        const imageError = validateImage(image);
+
+        if (imageError) {
+            return res.status(400).json({
+                message: imageError
+            });
+        }
+
+        const product = await productModel.updateProduct(id, {
+            name,
+            description: description || null,
+            price,
+            stock,
+            image
+        });
+
         res.status(200).json({
             message: 'Berhasil memperbarui data produk',
             data: product
@@ -91,14 +189,24 @@ async function updateProduct(req, res) {
 async function destroy(req, res) {
     try {
         const id = Number(req.params.id);
+
         if (!Number.isInteger(id) || id <= 0) {
-            return res.status(400).json({ message: 'ID produk tidak valid' });
+            return res.status(400).json({
+                message: 'ID produk tidak valid'
+            });
         }
+
         const deleted = await productModel.deleteProduct(id);
+
         if (!deleted) {
-            return res.status(404).json({ message: 'Produk tidak ditemukan' });
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            });
         }
-        res.status(200).json({ message: 'Berhasil menghapus data produk' });
+
+        res.status(200).json({
+            message: 'Berhasil menghapus data produk'
+        });
     } catch (error) {
         res.status(500).json({
             message: 'Gagal menghapus data produk',
