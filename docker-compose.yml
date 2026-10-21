@@ -1,34 +1,123 @@
 services:
-    product-service:
-        build: 
-            context: ./product_service
-            dockerfile: Dockerfile
-        ports:
-            - 3000:3000
-        environment:
-            - DB_HOST=product-db
-            - DB_USER=appuser
-            - DB_PASSWORD=apppassword
-            - DB_NAME=productdb
-        depends_on:
-            product-db:
-                condition: service_healthy
+  # =========================
+  # PRODUCT SERVICE
+  # =========================
+  product-service:
+    build:
+      context: ./product_service
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: product-db
+      DB_USER: appuser
+      DB_PASSWORD: apppassword
+      DB_NAME: productdb
+    depends_on:
+      product-db:
+        condition: service_healthy
 
-    product-db:
-        image: mysql:8.0
-        environment:
-            - MYSQL_DATABASE=productdb
-            - MYSQL_USER=appuser
-            - MYSQL_PASSWORD=apppassword
-            - MYSQL_ROOT_PASSWORD=rootpassword
-        volumes:
-            - product-db-data:/var/lib/mysql
-            - ./product_service/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-        healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost","--user=root","--password=rootpassword"]
-            interval: 10s
-            retries: 5
-            start_period: 30s
-            timeout: 5s
+  product-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: productdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - product-db-data:/var/lib/mysql
+      - ./product_service/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--user=root", "--password=rootpassword"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
+  # =========================
+  # CART SERVICE
+  # =========================
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      APP_NAME: cart-service
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: ""
+      DB_CONNECTION: pgsql
+      DB_HOST: cart-db
+      DB_PORT: "5432"
+      DB_DATABASE: cartdb
+      DB_USERNAME: appuser
+      DB_PASSWORD: apppassword
+      LOG_CHANNEL: stderr
+      PRODUCT_SERVICE_URL: http://product-service:3000
+    depends_on:
+      cart-db:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+
+  cart-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cartdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+    volumes:
+      - cart-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d cartdb"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  # =========================
+  # REVIEW SERVICE
+  # =========================
+  review-service:
+    build:
+      context: ./review-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3002"
+      FLASK_DEBUG: "1"
+      MONGO_URI: mongodb://appuser:apppassword@review-db:27017/?authSource=admin
+      MONGO_DB_NAME: reviewdb
+      PRODUCT_SERVICE_URL: http://product-service:3000
+    depends_on:
+      review-db:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+
+  review-db:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: appuser
+      MONGO_INITDB_ROOT_PASSWORD: apppassword
+    volumes:
+      - review-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+# =========================
+# DATABASE VOLUMES
+# =========================
 volumes:
-    product-db-data:
+  product-db-data:
+    name: mi-psdku_product-db-data
+  cart-db-data:
+    name: cart-service_cart-db-data
+  review-db-data:
+    name: mi-psdku_review-db-data
