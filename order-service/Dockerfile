@@ -18,6 +18,10 @@ COPY . .
 
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 3003
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=3003"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
