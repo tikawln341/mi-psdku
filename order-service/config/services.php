@@ -38,4 +38,8 @@ return [
     'product' => [
     'url' => env('PRODUCT_SERVICE_URL', 'http://product-service:3000'),
     ],
+
+    'cart' => [
+    'url' => env('CART_SERVICE_URL', 'http://cart-service:3001'),
+    ],
 ];
