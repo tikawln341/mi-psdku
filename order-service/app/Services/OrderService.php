@@ -130,4 +130,25 @@ class OrderService
 
         return $query->latest()->get();
     }
+
+    public function payOrder(int $orderId): ?Order
+    {
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            return null;
+        }
+
+        if ($order->status !== 'PENDING') {
+            throw new RuntimeException(
+                'Pesanan hanya dapat dibayar jika statusnya PENDING.'
+            );
+        }
+
+        $order->update([
+            'status' => 'PAID',
+        ]);
+
+        return $order->load('items');
+    }
 }

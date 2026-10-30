@@ -77,4 +77,32 @@ class OrderController extends Controller
             'data' => $orders,
         ], 200);
     }
+
+    public function pay(int $id): JsonResponse
+    {
+        try {
+            $order = $this->orderService->payOrder($id);
+
+            if (!$order) {
+                return response()->json([
+                    'message' => 'Pesanan tidak ditemukan.',
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Pembayaran pesanan berhasil.',
+                'data' => $order,
+            ], 200);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat memproses pembayaran.',
+            ], 500);
+        }
+    }
 }

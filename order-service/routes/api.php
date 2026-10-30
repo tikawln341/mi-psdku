@@ -10,3 +10,6 @@ Route::get('/orders/{id}', [OrderController::class, 'show'])
 
 Route::get('/orders/user/{userId}', [OrderController::class, 'index'])
     ->whereNumber('userId');
+
+Route::patch('/orders/{id}/pay', [OrderController::class, 'pay'])
+    ->whereNumber('id');
