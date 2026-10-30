@@ -1,4 +1,3 @@
-
 #!/bin/sh
 set -e
 
@@ -9,6 +8,7 @@ until mysqladmin ping \
     -P "${DB_PORT:-3306}" \
     -u "${DB_USERNAME:-appuser}" \
     --password="${DB_PASSWORD:-}" \
+    --skip-ssl-verify-server-cert \
     --silent; do
     echo "Database belum siap, mencoba lagi..."
     sleep 2
