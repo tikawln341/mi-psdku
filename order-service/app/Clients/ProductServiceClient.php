@@ -10,7 +10,7 @@ class ProductServiceClient
     public function getProduct(int $productId): array
     {
         $baseUrl = rtrim(
-            config('services.product.url'),
+            config('services.product.url', ''),
             '/'
         );
 
@@ -26,15 +26,15 @@ class ProductServiceClient
 
         if ($response->failed()) {
             throw new RuntimeException(
-                "Product Service gagal mengambil produk ID {$productId}."
+                "Gagal mengambil produk ID {$productId} dari Product Service."
             );
         }
 
-        $product = $response->json();
+        $product = $response->json('data');
 
         if (! is_array($product)) {
             throw new RuntimeException(
-                'Respons Product Service tidak valid.'
+                'Format data produk dari Product Service tidak valid.'
             );
         }
 
