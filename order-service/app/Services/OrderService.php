@@ -114,4 +114,9 @@ class OrderService
 
         return $order;
     }
+
+    public function getOrderById(int $orderId): ?Order
+    {
+        return Order::with('items')->find($orderId);
+    }
 }
