@@ -53,4 +53,28 @@ class OrderController extends Controller
             'data' => $order,
         ], 200);
     }
+
+    public function index(int $userId, \Illuminate\Http\Request $request): JsonResponse
+    {
+        $status = $request->query('status');
+
+        if (
+            $status !== null &&
+            !in_array($status, ['PENDING', 'PAID'], true)
+        ) {
+            return response()->json([
+                'message' => 'Status harus PENDING atau PAID.',
+            ], 422);
+        }
+
+        $orders = $this->orderService->getOrdersByUser(
+            $userId,
+            $status
+        );
+
+        return response()->json([
+            'message' => 'Riwayat pesanan berhasil diambil.',
+            'data' => $orders,
+        ], 200);
+    }
 }

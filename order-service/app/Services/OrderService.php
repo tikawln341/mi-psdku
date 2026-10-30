@@ -14,8 +14,7 @@ class OrderService
     public function __construct(
         private CartServiceClient $cartClient,
         private ProductServiceClient $productClient
-    ) {
-    }
+    ) {}
 
     public function checkout(int $userId): Order
     {
@@ -118,5 +117,17 @@ class OrderService
     public function getOrderById(int $orderId): ?Order
     {
         return Order::with('items')->find($orderId);
+    }
+
+    public function getOrdersByUser(int $userId, ?string $status = null)
+    {
+        $query = Order::with('items')
+            ->where('user_id', $userId);
+
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
+        return $query->latest()->get();
     }
 }
