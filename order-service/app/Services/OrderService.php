@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Clients\CartServiceClient;
 use App\Clients\ProductServiceClient;
+use App\Exceptions\CheckoutConflictException;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,9 @@ class OrderService
         $items = $cart['items'] ?? [];
 
         if (!is_array($items) || count($items) === 0) {
-            throw new RuntimeException('Keranjang belanja masih kosong.');
+            throw new CheckoutConflictException(
+                'Keranjang belanja masih kosong.'
+            );
         }
 
         // 2. Memeriksa produk dan menghitung total pesanan.
@@ -35,7 +38,9 @@ class OrderService
             $quantity = (int) ($item['quantity'] ?? 0);
 
             if ($productId <= 0 || $quantity <= 0) {
-                throw new RuntimeException('Data item keranjang tidak valid.');
+                throw new CheckoutConflictException(
+                    'Data item keranjang tidak valid.'
+                );
             }
 
             $product = $this->productClient->getProduct($productId);
@@ -50,19 +55,18 @@ class OrderService
                 !is_numeric($price) ||
                 !is_numeric($stock)
             ) {
-                throw new RuntimeException(
+                throw new CheckoutConflictException(
                     "Data produk ID {$productId} tidak valid."
                 );
             }
 
             if ((float) $price < 0 || (int) $stock < $quantity) {
-                throw new RuntimeException(
+                throw new CheckoutConflictException(
                     "Stok produk {$name} tidak mencukupi."
                 );
             }
 
-            // Menghitung nilai uang dalam satuan sen agar
-            // perhitungan tidak bergantung pada pecahan float.
+            // Menghitung nilai uang dalam satuan sen.
             $unitPriceCents = (int) round((float) $price * 100);
             $subtotalCents = $unitPriceCents * $quantity;
 
@@ -71,9 +75,19 @@ class OrderService
             $orderItems[] = [
                 'product_id' => $productId,
                 'product_name' => $name,
-                'unit_price' => number_format($unitPriceCents / 100, 2, '.', ''),
+                'unit_price' => number_format(
+                    $unitPriceCents / 100,
+                    2,
+                    '.',
+                    ''
+                ),
                 'quantity' => $quantity,
-                'subtotal' => number_format($subtotalCents / 100, 2, '.', ''),
+                'subtotal' => number_format(
+                    $subtotalCents / 100,
+                    2,
+                    '.',
+                    ''
+                ),
             ];
         }
 
@@ -104,11 +118,14 @@ class OrderService
         try {
             $this->cartClient->clearCart($userId);
         } catch (\Throwable $exception) {
-            Log::warning('Pesanan berhasil dibuat, tetapi keranjang gagal dikosongkan.', [
-                'order_id' => $order->id,
-                'user_id' => $userId,
-                'error' => $exception->getMessage(),
-            ]);
+            Log::warning(
+                'Pesanan berhasil dibuat, tetapi keranjang gagal dikosongkan.',
+                [
+                    'order_id' => $order->id,
+                    'user_id' => $userId,
+                    'error' => $exception->getMessage(),
+                ]
+            );
         }
 
         return $order;

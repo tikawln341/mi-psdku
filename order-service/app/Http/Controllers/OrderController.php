@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CheckoutConflictException;
+use App\Exceptions\ServiceUnavailableException;
 use App\Http\Requests\StoreOrderRequest;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Throwable;
 
@@ -25,10 +28,17 @@ class OrderController extends Controller
                 'message' => 'Pesanan berhasil dibuat.',
                 'data' => $order,
             ], 201);
-        } catch (RuntimeException $exception) {
+
+        } catch (CheckoutConflictException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
-            ], 422);
+            ], 409);
+
+        } catch (ServiceUnavailableException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 503);
+
         } catch (Throwable $exception) {
             report($exception);
 
@@ -54,7 +64,7 @@ class OrderController extends Controller
         ], 200);
     }
 
-    public function index(int $userId, \Illuminate\Http\Request $request): JsonResponse
+    public function index(int $userId, Request $request): JsonResponse
     {
         $status = $request->query('status');
 
@@ -93,10 +103,12 @@ class OrderController extends Controller
                 'message' => 'Pembayaran pesanan berhasil.',
                 'data' => $order,
             ], 200);
+
         } catch (RuntimeException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
-            ], 422);
+            ], 409);
+
         } catch (Throwable $exception) {
             report($exception);
 

@@ -2,6 +2,8 @@
 
 namespace App\Clients;
 
+use App\Exceptions\ServiceUnavailableException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -12,15 +14,23 @@ class CartServiceClient
         $baseUrl = rtrim(config('services.cart.url', ''), '/');
 
         if ($baseUrl === '') {
-            throw new RuntimeException('URL Cart Service belum dikonfigurasi.');
+            throw new ServiceUnavailableException(
+                'URL Cart Service belum dikonfigurasi.'
+            );
         }
 
-        $response = Http::timeout(5)
-            ->acceptJson()
-            ->get("{$baseUrl}/carts/{$userId}");
+        try {
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->get("{$baseUrl}/carts/{$userId}");
+        } catch (ConnectionException $exception) {
+            throw new ServiceUnavailableException(
+                'Cart Service tidak dapat dihubungi.'
+            );
+        }
 
         if ($response->failed()) {
-            throw new RuntimeException(
+            throw new ServiceUnavailableException(
                 "Gagal mengambil keranjang user ID {$userId} dari Cart Service."
             );
         }
@@ -28,7 +38,9 @@ class CartServiceClient
         $cart = $response->json('data');
 
         if (!is_array($cart)) {
-            throw new RuntimeException('Format data keranjang dari Cart Service tidak valid.');
+            throw new ServiceUnavailableException(
+                'Format data keranjang dari Cart Service tidak valid.'
+            );
         }
 
         return $cart;
@@ -39,7 +51,9 @@ class CartServiceClient
         $baseUrl = rtrim(config('services.cart.url', ''), '/');
 
         if ($baseUrl === '') {
-            throw new RuntimeException('URL Cart Service belum dikonfigurasi.');
+            throw new RuntimeException(
+                'URL Cart Service belum dikonfigurasi.'
+            );
         }
 
         $response = Http::timeout(5)
