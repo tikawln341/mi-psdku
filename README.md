@@ -166,15 +166,7 @@ Order Service menangani beberapa kondisi kesalahan, antara lain:
 - Proses pembayaran pada proyek ini merupakan simulasi perubahan status, bukan integrasi payment gateway.
 - Kredensial dalam konfigurasi Docker ditujukan untuk lingkungan lokal dan demonstrasi, bukan produksi.
 
-9. Demo Video
-
-Link Video Demo: Akan ditambahkan setelah proses perekaman selesai.
-
-Durasi: 8–12 menit.
-
-Timestamp: Akan dilengkapi setelah video diunggah.
-
-10. Repository
+9. Repository
 
 GitHub Repository:
 
